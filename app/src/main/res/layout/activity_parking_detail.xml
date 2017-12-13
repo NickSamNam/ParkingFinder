@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.hoogerdijknicknam.parkingfinder.ParkingDetailActivity">
+
+    <ImageView
+        android:id="@+id/parkingDetail_Img"
+        android:layout_width="0dp"
+        android:layout_height="168dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        app:srcCompat="@color/colorPrimaryDark" />
+
+    <Button
+        android:id="@+id/parkingDetail_directionsBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginStart="8dp"
+        android:text="@string/Directions"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.054"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/parkingDetail_Img"
+        app:layout_constraintVertical_bias="0.037" />
+
+    <Button
+        android:id="@+id/parkingDetail_SubscribeBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="4dp"
+        android:layout_marginStart="4dp"
+        android:text="@string/Subscribe"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.062"
+        app:layout_constraintStart_toEndOf="@+id/parkingDetail_directionsBtn"
+        app:layout_constraintTop_toBottomOf="@+id/parkingDetail_Img"
+        app:layout_constraintVertical_bias="0.037" />
+
+    <TextView
+        android:id="@+id/parkingDetail_titleTV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.049"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/parkingDetail_directionsBtn"
+        app:layout_constraintVertical_bias="0.071"
+        tools:text="Garage Grote Markt (Den Haag)"
+        android:layout_marginLeft="8dp" />
+
+    <TextView
+        android:id="@+id/parkingDetail_addressTV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.031"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/parkingDetail_titleTV"
+        app:layout_constraintVertical_bias="0.0"
+        tools:text="Garagestraat 1\n3264 HH Den Haag\nNetherlands"
+        android:layout_marginLeft="8dp" />
+
+    <TextView
+        android:id="@+id/parkingDetail_openingTimeTV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="2dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.031"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/parkingDetail_addressTV"
+        app:layout_constraintVertical_bias="0.034"
+        tools:text="Ma-Vr 06:00 - 23:00"
+        android:layout_marginLeft="8dp" />
+</android.support.constraint.ConstraintLayout>
