@@ -1,6 +1,5 @@
 package com.hoogerdijknicknam.parkingfinder
 
-import android.graphics.Point
 import android.os.Parcel
 import android.os.Parcelable
 import java.util.*
@@ -9,40 +8,48 @@ import java.util.*
  * Created by Ricky on 13/12/2017.
  */
 
-// Pair doubles: first double: longitude, second double = latitude.
-data class Parking(val areaDesc: String, val longitude: Double, val latitude: Double, val price: Float, val startTime: Date, val endTime: Date, val geoData: List<Pair<Double, Double>>) : Parcelable {
+data class Parking(val areaDesc: String, val location: LatLng, val price: Float, val startTime: Date, val endTime: Date, val geoData: List<LatLng>) : Parcelable {
     constructor(parcel: Parcel) : this(
             parcel.readString(),
-            parcel.readDouble(),
-            parcel.readDouble(),
+            parcel.readParcelable<LatLng>(LatLng::class.java.classLoader),
             parcel.readFloat(),
-            TODO("startTime"),
-            TODO("endTime"),
-            TODO("geoData")) {
-    }
+            Date(parcel.readLong()),
+            Date(parcel.readLong()),
+            parcel.createTypedArrayList(LatLng.CREATOR))
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeString(areaDesc)
+        parcel.writeParcelable(location, 0)
+        parcel.writeFloat(price)
         parcel.writeLong(startTime.time)
         parcel.writeLong(endTime.time)
-        parcel.writeString(areaDesc)
-        parcel.writeDouble(longitude)
-        parcel.writeDouble(latitude)
-        parcel.writeFloat(price)
+        parcel.writeTypedList(geoData)
     }
 
-    override fun describeContents(): Int {
-        return 0
-    }
+    override fun describeContents() = 0
 
     companion object CREATOR : Parcelable.Creator<Parking> {
-        override fun createFromParcel(parcel: Parcel): Parking {
-            return Parking(parcel)
-        }
+        override fun createFromParcel(parcel: Parcel) = Parking(parcel)
 
-        override fun newArray(size: Int): Array<Parking?> {
-            return arrayOfNulls(size)
-        }
+        override fun newArray(size: Int): Array<Parking?> = arrayOfNulls(size)
+    }
+}
+
+data class LatLng(val latitude: Double, val longitude: Double) : Parcelable {
+    constructor(parcel: Parcel) : this(
+            parcel.readDouble(),
+            parcel.readDouble())
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeDouble(latitude)
+        parcel.writeDouble(longitude)
     }
 
+    override fun describeContents() = 0
 
+    companion object CREATOR : Parcelable.Creator<LatLng> {
+        override fun createFromParcel(parcel: Parcel) = LatLng(parcel)
+
+        override fun newArray(size: Int): Array<LatLng?> = arrayOfNulls(size)
+    }
 }
