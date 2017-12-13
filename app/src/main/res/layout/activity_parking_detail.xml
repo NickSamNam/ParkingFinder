@@ -50,9 +50,7 @@
         android:id="@+id/parkingDetail_titleTV"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
         android:layout_marginStart="8dp"
-        android:text="Garage Grote Markt (Den Haag)"
         android:textSize="14sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -60,20 +58,23 @@
         app:layout_constraintHorizontal_bias="0.049"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/parkingDetail_directionsBtn"
-        app:layout_constraintVertical_bias="0.071" />
+        app:layout_constraintVertical_bias="0.071"
+        tools:text="Garage Grote Markt (Den Haag)"
+        android:layout_marginLeft="8dp" />
 
     <TextView
         android:id="@+id/parkingDetail_addressTV"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:text="Garagestraat 1\n3264 HH Den Haag\nNetherlands"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.031"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/parkingDetail_titleTV"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="0.0"
+        tools:text="Garagestraat 1\n3264 HH Den Haag\nNetherlands"
+        android:layout_marginLeft="8dp" />
 
     <TextView
         android:id="@+id/parkingDetail_openingTimeTV"
@@ -81,12 +82,12 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="2dp"
-        android:text="TextView"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.031"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/parkingDetail_addressTV"
         app:layout_constraintVertical_bias="0.034"
-        tools:text="Ma-Vr 06:00 - 23:00" />
+        tools:text="Ma-Vr 06:00 - 23:00"
+        android:layout_marginLeft="8dp" />
 </android.support.constraint.ConstraintLayout>
