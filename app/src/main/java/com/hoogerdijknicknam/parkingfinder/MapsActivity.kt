@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.text.format.DateFormat
 import android.util.Log
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -68,9 +69,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap = googleMap
         mMap.setOnInfoWindowClickListener(::onInfoWindowClick)
 
-        val sydney = LatLng(-34.0, 151.0)
-        mMap.addMarker(MarkerOptions().position(sydney).title("Kangaroo Parking").snippet("06:00 - 23:00"))
-
         if (fresh) {
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, DEFAULT_ZOOM))
             getLocationPermission()
@@ -79,8 +77,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         getDeviceLocation()
     }
 
+    private fun addMarker(parking: Parking) {
+        mMap.addMarker(MarkerOptions()
+                .title(parking.areaDesc)
+                .position(LatLng(parking.location.latitude, parking.location.longitude))
+                .snippet("${DateFormat.getTimeFormat(this).format(parking.startTime)} - ${DateFormat.getTimeFormat(this).format(parking.endTime)}")
+        ).tag = parking
+    }
+
     private fun onInfoWindowClick(marker: Marker) {
         val intent = Intent(this, ParkingDetailActivity::class.java)
+        intent.putExtra(KEY_PARKING, marker.tag as Parking)
         startActivity(intent)
     }
 
