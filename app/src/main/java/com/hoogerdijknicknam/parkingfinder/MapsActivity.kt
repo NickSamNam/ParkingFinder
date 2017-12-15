@@ -9,6 +9,7 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.text.format.DateFormat
 import android.util.Log
+import com.android.volley.toolbox.Volley
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -75,14 +76,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         updateLocationUI()
         getDeviceLocation()
+
+        RDWOpenDataRetriever(Volley.newRequestQueue(this)).requestParking(object : RDWOpenDataRetriever.ParkingRequestListener {
+            override fun onReceived(parking: Parking) {
+                addMarker(parking)
+            }
+        })
     }
 
     private fun addMarker(parking: Parking) {
-        mMap.addMarker(MarkerOptions()
+        val options = MarkerOptions()
                 .title(parking.areaDesc)
                 .position(LatLng(parking.location.latitude, parking.location.longitude))
-                .snippet("${DateFormat.getTimeFormat(this).format(parking.startTime)} - ${DateFormat.getTimeFormat(this).format(parking.endTime)}")
-        ).tag = parking
+        if (parking.startTime != null && parking.endTime != null)
+            options.snippet("${DateFormat.getTimeFormat(this).format(parking.startTime)} - ${DateFormat.getTimeFormat(this).format(parking.endTime)}")
+        mMap.addMarker(options).tag = parking
     }
 
     private fun onInfoWindowClick(marker: Marker) {

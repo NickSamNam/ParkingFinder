@@ -5,6 +5,7 @@ import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.JsonArrayRequest
 import org.json.JSONArray
+import org.json.JSONException
 
 /**
  * Created by snick on 15-12-2017.
@@ -22,51 +23,119 @@ private const val USAGE_ID_P_EN_R = "PARKRIDE"
 private const val USAGE_ID_CARPOOL = "CARPOOL"
 
 class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
-    fun retrieveAllParking(parkingRetrievalListener: ParkingRetrievalListener) {
+    fun requestParking(parkingRequestListener: ParkingRequestListener) {
         retrieveTableGebied(API_QUERY_GEBIED, Response.Listener { response ->
-            val parkings = ArrayList<Parking>()
-            forEachGebied@ for (i in 0 until response.length()) {
-                val gebied = response.getJSONObject(i)
-                val areaid = gebied.getString("areaid")
-                val areadesc = gebied.getString("areadesc")
-                val usageid = gebied.getString("usageid")
-
-                retrieveGebiedLocation(areaid, usageid, object : LocationRetrievalListener {
-                    override fun onSuccessful(location: LatLng) {
-                        parkings.add(Parking(areadesc, location, 0f, null, null, null))
-                    }
-
-                    override fun onFailed() {
-                        return@onFailed
-                    }
-                })
-            }
-        }, Response.ErrorListener { parkingRetrievalListener.onFailed() })
+            stage1(response, parkingRequestListener)
+        }, Response.ErrorListener { return@ErrorListener })
     }
 
-    private fun retrieveGebiedLocation(areaid: String, usageid: String, locationRetrievalListener: LocationRetrievalListener) {
-        val query = "?\$query=SELECT location WHERE areaid=$areaid"
-        when (usageid) {
-            USAGE_ID_GARAGE -> retrieveTableParkeerGarages(query, Response.Listener {
+    /**
+     * Retrieve GEBIED
+     */
+    private fun stage1(response: JSONArray, parkingRequestListener: ParkingRequestListener) {
+        forEachGebied@ for (i in 0 until response.length()) {
+            val jGebied = response.getJSONObject(i)
 
-            }, Response.ErrorListener { locationRetrievalListener.onFailed() })
+            val areaid = jGebied.getString("areaid")
+            val areadesc = try {jGebied.getString("areadesc")} catch (e: JSONException) {""}
+            val usageid = jGebied.getString("usageid")
 
-            USAGE_ID_P_EN_R -> retrieveTableParkeerGarages(query, Response.Listener {
-
-            }, Response.ErrorListener { locationRetrievalListener.onFailed() })
-
-            USAGE_ID_CARPOOL -> retrieveTableCarpool(query, Response.Listener {
-
-            }, Response.ErrorListener { locationRetrievalListener.onFailed() })
-
-            else -> retrieveGebiedGeometrie(areaid, Response.Listener {
-
-            }, Response.ErrorListener { locationRetrievalListener.onFailed() })
+            stage2(areaid, areadesc, usageid, parkingRequestListener)
         }
     }
 
-    private fun retrieveGebiedGeometrie(areaid: String, responseListener: Response.Listener<JSONArray>, errorListener: Response.ErrorListener) {
-        retrieveTableGeometrieGebied("?\$query=SELECT areageometryastext WHERE areaid=$areaid", responseListener, errorListener)
+    /**
+     * Retrieve location
+     */
+    private fun stage2(areaid: String, areadesc: String, usageid: String, parkingRequestListener: ParkingRequestListener) {
+        val query = "?\$query=SELECT location WHERE areaid=\"$areaid\""
+        when (usageid) {
+            USAGE_ID_GARAGE -> retrieveTableGeoParkeerGarages(query, Response.Listener { response ->
+                if (response.length() <= 0) return@Listener
+                val location = geoResultToLatLng(response)
+                stage3(areaid, areadesc, location, parkingRequestListener)
+            }, Response.ErrorListener { return@ErrorListener })
+
+            USAGE_ID_P_EN_R -> retrieveTableGeoPenR(query, Response.Listener { response ->
+                if (response.length() <= 0) return@Listener
+                val location = geoResultToLatLng(response)
+                stage3(areaid, areadesc, location, parkingRequestListener)
+            }, Response.ErrorListener { return@ErrorListener })
+
+            USAGE_ID_CARPOOL -> retrieveTableGeoCarpool(query, Response.Listener { response ->
+                if (response.length() <= 0) return@Listener
+                val location = geoResultToLatLng(response)
+                stage3(areaid, areadesc, location, parkingRequestListener)
+            }, Response.ErrorListener { return@ErrorListener })
+
+            else -> retrieveGebiedGeometrie(areaid, object : AreaRetrievalListener {
+                override fun onSuccessful(area: List<LatLng>) {
+                    stage4(areaid, areadesc, area.average(), area, parkingRequestListener)
+                }
+
+                override fun onFailed() {
+                    return
+                }
+            })
+        }
+    }
+
+    /**
+     * Retrieve area
+     */
+    private fun stage3(areaid: String, areadesc: String, location: LatLng, parkingRequestListener: ParkingRequestListener) {
+        retrieveGebiedGeometrie(areaid, object : AreaRetrievalListener {
+            override fun onSuccessful(area: List<LatLng>) {
+                stage4(areaid, areadesc, location, area, parkingRequestListener)
+            }
+
+            override fun onFailed() {
+                stage4(areaid, areadesc, location, null, parkingRequestListener)
+            }
+        })
+    }
+
+    private fun stage4(areaid: String, areadesc: String, location: LatLng, area: List<LatLng>?, parkingRequestListener: ParkingRequestListener) {
+        parkingRequestListener.onReceived(Parking(areadesc, location, null, null, null, area))
+    }
+
+    private fun geoResultToLatLng(response: JSONArray): LatLng {
+        val jLocation = response.getJSONObject(0).getJSONObject("location").getJSONArray("coordinates")
+        return LatLng(jLocation.getDouble(1), jLocation.getDouble(0))
+    }
+
+    private fun retrieveGebiedGeometrie(areaid: String, areaRetrievalListener: AreaRetrievalListener) {
+        retrieveTableGeometrieGebied("?\$query=SELECT areageometryastext WHERE areaid=\"$areaid\"", Response.Listener { response ->
+            if (response.length() <= 0) areaRetrievalListener.onFailed()
+//            val geoString = response.getJSONObject(0).getString("areageometryastext")
+            val area = ArrayList<LatLng>()
+            when {
+//                geoString.startsWith("POINT") -> {
+//                    val c = geoString.removePrefix("POINT").removeSurrounding("(", ")").split(" ")
+//                    area.add(LatLng(c[0].toDouble(), c[1].toDouble()))
+//                }
+//                geoString.startsWith("POLYGON") -> {
+//                    val cs = geoString.removePrefix("POLYGON").removeSurrounding("((", "))").split(", ")
+//                    cs.forEach { it ->
+//                        val c = it.split(" ")
+//                        area.add(LatLng(c[0].toDouble(), c[1].toDouble()))
+//                    }
+//                }
+//                geoString.startsWith("MULTIPOLYGON") -> {
+//                    val css = geoString.removePrefix("MULTIPOLYGON").removeSurrounding("(", ")").split("), (")
+//                    css.forEach { it ->
+//                        var cs = it.replace("(", "")
+//                        cs = it.replace(")", "")
+//                        cs.split(", ").forEach { itAgain ->
+//                            val c = itAgain.split(" ")
+//                            area.add(LatLng(c[0].toDouble(), c[1].toDouble()))
+//                        }
+//                    }
+//                }
+                else -> areaRetrievalListener.onFailed()
+            }
+            areaRetrievalListener.onSuccessful(area)
+        }, Response.ErrorListener { areaRetrievalListener.onFailed() })
     }
 
     private fun retrieveTableGebied(query: String = "", responseListener: Response.Listener<JSONArray>, errorListener: Response.ErrorListener) {
@@ -77,7 +146,7 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
         retrieveTable(API_RESOURCE_GEOMETRIE_GEBIED + query, responseListener, errorListener)
     }
 
-    private fun retrieveTableParkeerGarages(query: String = "", responseListener: Response.Listener<JSONArray>, errorListener: Response.ErrorListener) {
+    private fun retrieveTableGeoParkeerGarages(query: String = "", responseListener: Response.Listener<JSONArray>, errorListener: Response.ErrorListener) {
         retrieveTable(API_RESOURCE_GEO_PARKEER_GARAGES + query, responseListener, errorListener)
     }
 
@@ -85,7 +154,7 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
         retrieveTable(API_RESOURCE_GEO_PENR + query, responseListener, errorListener)
     }
 
-    private fun retrieveTableCarpool(query: String = "", responseListener: Response.Listener<JSONArray>, errorListener: Response.ErrorListener) {
+    private fun retrieveTableGeoCarpool(query: String = "", responseListener: Response.Listener<JSONArray>, errorListener: Response.ErrorListener) {
         retrieveTable(API_RESOURCE_GEO_CARPOOL + query, responseListener, errorListener)
     }
 
@@ -94,13 +163,12 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
         requestQueue.add(request)
     }
 
-    interface ParkingRetrievalListener {
-        fun onSuccesful(parkings: List<Parking>)
-        fun onFailed()
+    interface ParkingRequestListener {
+        fun onReceived(parking: Parking)
     }
 
-    private interface LocationRetrievalListener {
-        fun onSuccessful(location: LatLng)
+    private interface AreaRetrievalListener {
+        fun onSuccessful(area: List<LatLng>)
         fun onFailed()
     }
 }
