@@ -23,7 +23,8 @@ import com.google.android.gms.maps.model.MarkerOptions
 
 
 private const val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 0
-private const val DEFAULT_ZOOM = 18f
+private const val ZOOM_DEFAULT = 18f
+private const val ZOOM_THRESHOLD = 10
 private const val KEY_LOCATION = "LOCATION"
 private const val KEY_CAMERA_POSITION = "CAMERA_POSITION"
 
@@ -34,6 +35,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var cameraPosition: CameraPosition? = null
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private val defaultLocation = LatLng(32.676149, -117.157703)
+    private val parkings = ArrayList<Parking>()
+    private val visibleMarkers = HashMap<String, Marker>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,9 +72,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap.setOnInfoWindowClickListener(::onInfoWindowClick)
+        mMap.setOnCameraIdleListener { parkings.forEach { it -> addMarker(it) } }
 
         if (fresh) {
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, DEFAULT_ZOOM))
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, ZOOM_DEFAULT))
             getLocationPermission()
         }
         updateLocationUI()
@@ -79,18 +83,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         RDWOpenDataRetriever(Volley.newRequestQueue(this)).requestParking(object : RDWOpenDataRetriever.ParkingRequestListener {
             override fun onReceived(parking: Parking) {
+                parkings.add(parking)
                 addMarker(parking)
             }
         })
     }
 
     private fun addMarker(parking: Parking) {
-        val options = MarkerOptions()
-                .title(parking.areaDesc)
-                .position(LatLng(parking.location.latitude, parking.location.longitude))
-        if (parking.startTime != null && parking.endTime != null)
-            options.snippet("${DateFormat.getTimeFormat(this).format(parking.startTime)} - ${DateFormat.getTimeFormat(this).format(parking.endTime)}")
-        mMap.addMarker(options).tag = parking
+        val bounds = mMap.projection.visibleRegion.latLngBounds
+
+        if (bounds.contains(LatLng(parking.location.latitude, parking.location.longitude)) && mMap.cameraPosition.zoom >= ZOOM_THRESHOLD) {
+            if (!visibleMarkers.containsKey(parking.areaId)) {
+                val options = MarkerOptions()
+                        .title(parking.areaDesc)
+                        .position(LatLng(parking.location.latitude, parking.location.longitude))
+                if (parking.startTime != null && parking.endTime != null)
+                    options.snippet("${DateFormat.getTimeFormat(this).format(parking.startTime)} - ${DateFormat.getTimeFormat(this).format(parking.endTime)}")
+                val marker = mMap.addMarker(options)
+                marker.tag = parking
+                visibleMarkers.put(parking.areaId, marker)
+            }
+        } else {
+            visibleMarkers.remove(parking.areaId)?.remove()
+        }
     }
 
     private fun onInfoWindowClick(marker: Marker) {
@@ -124,10 +139,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         if (cameraPosition == null)
                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
                                     LatLng(lastKnownLocation!!.latitude,
-                                            lastKnownLocation!!.longitude), DEFAULT_ZOOM))
+                                            lastKnownLocation!!.longitude), ZOOM_DEFAULT))
                     } else {
                         if (cameraPosition == null)
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, DEFAULT_ZOOM))
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, ZOOM_DEFAULT))
                         mMap.uiSettings.isMyLocationButtonEnabled = false
                     }
                 }

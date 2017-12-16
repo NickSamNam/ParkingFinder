@@ -9,8 +9,9 @@ import java.util.*
  * Created by Ricky on 13/12/2017.
  */
 
-data class Parking(val areaDesc: String, val location: LatLng, val price: Float?, val startTime: Date?, val endTime: Date?, val area: List<LatLng>?) : Parcelable {
+data class Parking(val areaId: String, val areaDesc: String, val location: LatLng, val price: Float?, val startTime: Date?, val endTime: Date?, val area: List<LatLng>?) : Parcelable {
     constructor(parcel: Parcel) : this(
+            parcel.readString(),
             parcel.readString(),
             parcel.readParcelable<LatLng>(LatLng::class.java.classLoader),
             try {
@@ -35,6 +36,7 @@ data class Parking(val areaDesc: String, val location: LatLng, val price: Float?
             })
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeString(areaId)
         parcel.writeString(areaDesc)
         parcel.writeParcelable(location, 0)
         if (price != null) parcel.writeFloat(price)

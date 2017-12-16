@@ -96,7 +96,7 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
     }
 
     private fun stage4(areaid: String, areadesc: String, location: LatLng, area: List<LatLng>?, parkingRequestListener: ParkingRequestListener) {
-        parkingRequestListener.onReceived(Parking(areadesc, location, null, null, null, area))
+        parkingRequestListener.onReceived(Parking(areaid, areadesc, location, null, null, null, area))
     }
 
     private fun geoResultToLatLng(response: JSONArray): LatLng {
