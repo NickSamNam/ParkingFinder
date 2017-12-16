@@ -37,7 +37,11 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
             val jGebied = response.getJSONObject(i)
 
             val areaid = jGebied.getString("areaid")
-            val areadesc = try {jGebied.getString("areadesc")} catch (e: JSONException) {""}
+            val areadesc = try {
+                jGebied.getString("areadesc")
+            } catch (e: JSONException) {
+                ""
+            }
             val usageid = jGebied.getString("usageid")
 
             stage2(areaid, areadesc, usageid, parkingRequestListener)
@@ -106,36 +110,65 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
 
     private fun retrieveGebiedGeometrie(areaid: String, areaRetrievalListener: AreaRetrievalListener) {
         retrieveTableGeometrieGebied("?\$query=SELECT areageometryastext WHERE areaid=\"$areaid\"", Response.Listener { response ->
-            if (response.length() <= 0) areaRetrievalListener.onFailed()
-//            val geoString = response.getJSONObject(0).getString("areageometryastext")
+            if (response.length() <= 0) {
+                areaRetrievalListener.onFailed()
+                return@Listener
+            }
+            val geoString: String
+            try {
+                geoString = response.getJSONObject(0).getString("areageometryastext")
+            } catch (e: JSONException) {
+                areaRetrievalListener.onFailed()
+                return@Listener
+            }
             val area = ArrayList<LatLng>()
             when {
-//                geoString.startsWith("POINT") -> {
-//                    val c = geoString.removePrefix("POINT").removeSurrounding("(", ")").split(" ")
-//                    area.add(LatLng(c[0].toDouble(), c[1].toDouble()))
-//                }
-//                geoString.startsWith("POLYGON") -> {
-//                    val cs = geoString.removePrefix("POLYGON").removeSurrounding("((", "))").split(", ")
-//                    cs.forEach { it ->
-//                        val c = it.split(" ")
-//                        area.add(LatLng(c[0].toDouble(), c[1].toDouble()))
-//                    }
-//                }
-//                geoString.startsWith("MULTIPOLYGON") -> {
-//                    val css = geoString.removePrefix("MULTIPOLYGON").removeSurrounding("(", ")").split("), (")
-//                    css.forEach { it ->
-//                        var cs = it.replace("(", "")
-//                        cs = it.replace(")", "")
-//                        cs.split(", ").forEach { itAgain ->
-//                            val c = itAgain.split(" ")
-//                            area.add(LatLng(c[0].toDouble(), c[1].toDouble()))
-//                        }
-//                    }
-//                }
+                geoString.startsWith("POINT") -> {
+                    val c = geoString.removePrefix("POINT").removeSurrounding("(", ")").split(" ")
+                    try {
+                        area.add(stringsToLatLng(c))
+                    } catch (e: NumberFormatException) {
+                        areaRetrievalListener.onFailed()
+                        return@Listener
+                    }
+                }
+                geoString.startsWith("POLYGON") -> {
+                    val cs = geoString.removePrefix("POLYGON").removeSurrounding("((", "))").split(", ")
+                    cs.forEach { it ->
+                        val c = it.split(" ")
+                        try {
+                            area.add(stringsToLatLng(c))
+                        } catch (e: NumberFormatException) {
+                        }
+                    }
+                }
+                geoString.startsWith("MULTIPOLYGON") -> {
+                    val css = geoString.removePrefix("MULTIPOLYGON").removeSurrounding("(", ")").split("), (")
+                    css.forEach { it ->
+                        var cs = it.replace("(", "")
+                        cs = it.replace(")", "")
+                        cs.split(", ").forEach { itAgain ->
+                            val c = itAgain.split(" ")
+                            try {
+                                area.add(stringsToLatLng(c))
+                            } catch (e: NumberFormatException) {
+
+                            }
+                        }
+                    }
+                }
                 else -> areaRetrievalListener.onFailed()
             }
-            areaRetrievalListener.onSuccessful(area)
+            if (area.size > 0)
+                areaRetrievalListener.onSuccessful(area)
+            else
+                areaRetrievalListener.onFailed()
         }, Response.ErrorListener { areaRetrievalListener.onFailed() })
+    }
+
+    private fun stringsToLatLng(strings: List<String>): LatLng {
+        val doubles = strings.map { it.toDouble() }
+        return LatLng(doubles.max()!!, doubles.min()!!)
     }
 
     private fun retrieveTableGebied(query: String = "", responseListener: Response.Listener<JSONArray>, errorListener: Response.ErrorListener) {
