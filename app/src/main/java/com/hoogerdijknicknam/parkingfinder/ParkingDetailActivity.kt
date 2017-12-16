@@ -23,21 +23,24 @@ class ParkingDetailActivity : AppCompatActivity() {
         subscribeBtn.setOnClickListener(){
             Toast.makeText(this, "It works i think", Toast.LENGTH_SHORT).show()
         }
+
+        val parking = intent.extras.getParcelable(KEY_PARKING) as Parking
+        setTitle(parking.areaDesc)
     }
 
     fun setTitle(title: String){
         val titleTV: TextView = findViewById(R.id.parkingDetail_titleTV)
-        titleTV.setText(title)
+        titleTV.text = title
     }
 
     fun setAddress(address: String){
         val addressTV: TextView = findViewById(R.id.parkingDetail_addressTV)
-        addressTV.setText(address)
+        addressTV.text = address
     }
 
     fun setOpening(open: String){
         val openTV: TextView = findViewById(R.id.parkingDetail_openingTimeTV)
-        openTV.setText(open)
+        openTV.text = open
     }
 
     fun setImage(image: String){
