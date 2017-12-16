@@ -28,14 +28,13 @@ private const val ZOOM_THRESHOLD = 10
 private const val KEY_LOCATION = "LOCATION"
 private const val KEY_CAMERA_POSITION = "CAMERA_POSITION"
 
-class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
+class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscriptionService.Subscription {
     private var fresh = true
     private lateinit var mMap: GoogleMap
     private var lastKnownLocation: Location? = null
     private var cameraPosition: CameraPosition? = null
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private val defaultLocation = LatLng(32.676149, -117.157703)
-    private val parkings = ArrayList<Parking>()
     private val visibleMarkers = HashMap<String, Marker>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +44,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             fresh = false
             lastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION)
             cameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION)
+        } else {
+            RDWOpenDataSubscriptionService.start(Volley.newRequestQueue(this))
         }
 
         setContentView(R.layout.activity_maps)
@@ -55,9 +56,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
-        outState?.putParcelable(KEY_CAMERA_POSITION, mMap.cameraPosition)
+        try {
+            outState?.putParcelable(KEY_CAMERA_POSITION, mMap.cameraPosition)
+        } catch (e: UninitializedPropertyAccessException) {
+
+        }
         outState?.putParcelable(KEY_LOCATION, lastKnownLocation)
         super.onSaveInstanceState(outState)
+    }
+
+    override fun onDestroy() {
+        RDWOpenDataSubscriptionService.unsubscribe(this)
+        super.onDestroy()
     }
 
     /**
@@ -72,7 +82,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap.setOnInfoWindowClickListener(::onInfoWindowClick)
-        mMap.setOnCameraIdleListener { parkings.forEach { it -> addMarker(it) } }
+        mMap.setOnCameraIdleListener { RDWOpenDataSubscriptionService.backLog.forEach { it -> addMarker(it) } }
+        RDWOpenDataSubscriptionService.backLog.forEach { addMarker(it) }
 
         if (fresh) {
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, ZOOM_DEFAULT))
@@ -81,12 +92,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         updateLocationUI()
         getDeviceLocation()
 
-        RDWOpenDataRetriever(Volley.newRequestQueue(this)).requestParking(object : RDWOpenDataRetriever.ParkingRequestListener {
-            override fun onReceived(parking: Parking) {
-                parkings.add(parking)
-                addMarker(parking)
-            }
-        })
+        RDWOpenDataSubscriptionService.subscribe(this)
+    }
+
+    override fun onReceive(parking: Parking) {
+        addMarker(parking)
     }
 
     private fun addMarker(parking: Parking) {
