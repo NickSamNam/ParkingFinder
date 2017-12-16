@@ -6,8 +6,9 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import kotlinx.android.synthetic.main.activity_parking_detail.*
 
-public const val KEY_PARKING = "PARKING"
+const val KEY_PARKING = "PARKING"
 class ParkingDetailActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,8 +25,10 @@ class ParkingDetailActivity : AppCompatActivity() {
             Toast.makeText(this, "It works i think", Toast.LENGTH_SHORT).show()
         }
 
-        val parking = intent.extras.getParcelable(KEY_PARKING) as Parking
-        setTitle(parking.areaDesc)
+        val parking = RDWOpenDataSubscriptionService.backLog.find { it.areaId == intent.extras.getString(KEY_PARKING) }
+        if (parking != null) {
+            parkingDetail_titleTV.text = parking.areaDesc
+        }
     }
 
     fun setTitle(title: String){

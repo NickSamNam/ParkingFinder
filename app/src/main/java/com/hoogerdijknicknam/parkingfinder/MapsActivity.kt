@@ -110,7 +110,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
                 if (parking.startTime != null && parking.endTime != null)
                     options.snippet("${DateFormat.getTimeFormat(this).format(parking.startTime)} - ${DateFormat.getTimeFormat(this).format(parking.endTime)}")
                 val marker = mMap.addMarker(options)
-                marker.tag = parking
+                marker.tag = parking.areaId
                 visibleMarkers.put(parking.areaId, marker)
             }
         } else {
@@ -120,7 +120,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
 
     private fun onInfoWindowClick(marker: Marker) {
         val intent = Intent(this, ParkingDetailActivity::class.java)
-        intent.putExtra(KEY_PARKING, marker.tag as Parking)
+        intent.putExtra(KEY_PARKING, marker.tag as String)
         startActivity(intent)
     }
 
