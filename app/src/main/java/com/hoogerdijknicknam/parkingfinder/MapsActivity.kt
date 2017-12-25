@@ -1,5 +1,6 @@
 package com.hoogerdijknicknam.parkingfinder
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -12,8 +13,7 @@ import android.text.format.DateFormat
 import android.util.Log
 import com.android.volley.Request
 import com.android.volley.toolbox.Volley
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -41,6 +41,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
     private var parking: Parking? = null
     private var routeLines: MutableList<Polyline>? = null
     private var route: List<List<LatLng>>? = null
+    private lateinit var locationCallback: LocationCallback
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +62,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
         val mapFragment = supportFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult?) {
+                lastKnownLocation = locationResult?.lastLocation
+                drawRoute()
+            }
+        }
+    }
+
+    override fun onResume() {
+        registerLocationUpdates()
+        super.onResume()
+    }
+
+    override fun onPause() {
+        deregisterLocationUpdates()
+        super.onPause()
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
@@ -225,6 +243,24 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
             }
             routeLines!!.add(mMap.addPolyline(p))
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun registerLocationUpdates() {
+        if (!hasLocationPermission()) return
+
+        val locationRequest = LocationRequest()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(10000)
+                .setSmallestDisplacement(10f)
+                .setMaxWaitTime(1000)
+                .setFastestInterval(10000)
+
+        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
+    }
+
+    private fun deregisterLocationUpdates() {
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
     }
 
     override fun onReceive(parking: Parking) {
