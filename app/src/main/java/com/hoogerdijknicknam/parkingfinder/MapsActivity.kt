@@ -288,7 +288,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
 
     private fun onInfoWindowClick(marker: Marker) {
         val intent = Intent(this, ParkingDetailActivity::class.java)
-        intent.putExtra(KEY_PARKING, marker.tag as String)
+        intent.putExtra(KEY_PARKING_ID, marker.tag as String)
         startActivity(intent)
     }
 
