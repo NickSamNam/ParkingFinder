@@ -4,4 +4,6 @@
     <string name="Directions">Directions</string>
     <string name="Subscribe">Park Here</string>
     <string name="Route">Show Route</string>
+    <string name="toast_operation_fail">Operation unsuccessful!</string>
+    <string name="unsubscribe">Leave</string>
 </resources>
