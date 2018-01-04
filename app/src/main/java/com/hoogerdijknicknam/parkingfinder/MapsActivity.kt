@@ -1,6 +1,7 @@
 package com.hoogerdijknicknam.parkingfinder
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -29,6 +30,7 @@ private const val ZOOM_DEFAULT = 18f
 private const val ZOOM_THRESHOLD = 10
 private const val KEY_LOCATION = "LOCATION"
 private const val KEY_CAMERA_POSITION = "CAMERA_POSITION"
+private const val REQUEST_PARKING_SAVING = 0
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscriptionService.Subscription {
     private var fresh = true
@@ -42,9 +44,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
     private var routeLines: MutableList<Polyline>? = null
     private var route: List<List<LatLng>>? = null
     private lateinit var locationCallback: LocationCallback
+    private lateinit var savedParkingId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        savedParkingId = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE).getString(KEY_PARKING_ID, "")
 
         if (savedInstanceState != null) {
             fresh = false
@@ -55,7 +60,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
             RDWOpenDataSubscriptionService.start(Volley.newRequestQueue(this))
             parking = RDWOpenDataSubscriptionService.backLog.find { it.areaId == intent.extras?.getString(KEY_PARKING) }
         }
-
 
         setContentView(R.layout.activity_maps)
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
@@ -275,6 +279,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
                 val options = MarkerOptions()
                         .title(parking.areaDesc)
                         .position(LatLng(parking.location.latitude, parking.location.longitude))
+                if (parking.areaId == savedParkingId) options.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
                 if (parking.startTime != null && parking.endTime != null)
                     options.snippet("${DateFormat.getTimeFormat(this).format(parking.startTime)} - ${DateFormat.getTimeFormat(this).format(parking.endTime)}")
                 val marker = mMap.addMarker(options)
@@ -287,9 +292,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
     }
 
     private fun onInfoWindowClick(marker: Marker) {
+        val id = marker.tag as String
         val intent = Intent(this, ParkingDetailActivity::class.java)
-        intent.putExtra(KEY_PARKING_ID, marker.tag as String)
-        startActivity(intent)
+        intent.putExtra(KEY_PARKING_ID, id)
+        startActivityForResult(intent, REQUEST_PARKING_SAVING)
     }
 
     private fun updateLocationUI() {
@@ -351,6 +357,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
                     getDeviceLocation()
                 }
             }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == REQUEST_PARKING_SAVING) {
+            visibleMarkers[savedParkingId]?.setIcon(BitmapDescriptorFactory.defaultMarker())
+            savedParkingId = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE).getString(KEY_PARKING_ID, "")
+            visibleMarkers[savedParkingId]?.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
         }
     }
 }
