@@ -7,4 +7,6 @@
     <string name="toast_operation_fail">Operation unsuccessful!</string>
     <string name="unsubscribe">Leave</string>
     <string name="toast_notify_on">You will be notified when to leave.</string>
+    <string name="notification_title">Time to leave</string>
+    <string name="notification_text">Tap to see where you parked</string>
 </resources>
