@@ -1,7 +1,9 @@
 package com.hoogerdijknicknam.parkingfinder
 
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.View
@@ -14,17 +16,39 @@ import kotlinx.android.synthetic.main.activity_parking_detail.*
 const val KEY_PARKING = "PARKING"
 const val KEY_PARKING_ID = "PARKING_ID"
 const val KEY_NOTIFY = "NOTIFY"
+const val KEY_TIME_HOUR = "TIME_HOUR"
+const val KEY_TIME_MINUTE = "TIME_MINUTE"
+const val TAG_TIME_PICKER_DIALOG_FRAGMENT = "TPDF"
 
 class ParkingDetailActivity : AppCompatActivity() {
     private var parking: Parking? = null
+    private lateinit var prefs: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_parking_detail)
 
         parking = RDWOpenDataSubscriptionService.backLog.find { it.areaId == intent.extras.getString(KEY_PARKING_ID) }
+        prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
 
         val subscribeBtn: Button = findViewById(R.id.parkingDetail_SubscribeBtn)
+        val tpdf = TimePickerDialogFragment()
+        tpdf.addTimeSetListener(TimePickerDialog.OnTimeSetListener { view, hourOfDay, minute ->
+            saveTime(hourOfDay, minute)
+
+            if (saveLocation()) {
+                subscribeBtn.tag = true
+                subscribeBtn.setText(R.string.unsubscribe)
+                parkingDetail_btn_notify.visibility = View.VISIBLE
+                if (parkingDetail_btn_notify.tag as Boolean) {
+                    parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications_active)
+                } else {
+                    parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications)
+                }
+            } else {
+                Toast.makeText(this, R.string.toast_operation_fail, Toast.LENGTH_SHORT).show()
+            }
+        })
 
         if (parkingDetail_btn_notify.tag == null) {
             parkingDetail_btn_notify.tag = isNotifyOn()
@@ -65,18 +89,7 @@ class ParkingDetailActivity : AppCompatActivity() {
 
         subscribeBtn.setOnClickListener {
             if (subscribeBtn.tag == false) {
-                if (saveLocation()) {
-                    subscribeBtn.tag = true
-                    subscribeBtn.setText(R.string.unsubscribe)
-                    parkingDetail_btn_notify.visibility = View.VISIBLE
-                    if (parkingDetail_btn_notify.tag as Boolean) {
-                        parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications_active)
-                    } else {
-                        parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications)
-                    }
-                } else {
-                    Toast.makeText(this, R.string.toast_operation_fail, Toast.LENGTH_SHORT).show()
-                }
+                tpdf.show(supportFragmentManager, TAG_TIME_PICKER_DIALOG_FRAGMENT)
             } else {
                 if (unsaveLocation()) {
                     subscribeBtn.tag = false
@@ -98,34 +111,22 @@ class ParkingDetailActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveLocation(): Boolean {
-        val prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
-        return prefs.edit().putString(KEY_PARKING_ID, parking?.areaId).commit()
-    }
+    private fun saveLocation() = prefs.edit().putString(KEY_PARKING_ID, parking?.areaId).commit()
 
-    private fun unsaveLocation(): Boolean {
-        val prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
-        return prefs.edit().remove(KEY_PARKING_ID).commit()
-    }
+    private fun unsaveLocation() = prefs.edit().remove(KEY_PARKING_ID).commit()
 
-    private fun isLocationSaved(): Boolean {
-        val prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_PARKING_ID, "") == parking?.areaId
-    }
+    private fun isLocationSaved() = prefs.getString(KEY_PARKING_ID, "") == parking?.areaId
 
-    private fun notifyOn(): Boolean {
-        val prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
-        return prefs.edit().putBoolean(KEY_NOTIFY, true).commit()
-    }
+    private fun notifyOn() = prefs.edit().putBoolean(KEY_NOTIFY, true).commit()
 
-    private fun notifyOff(): Boolean {
-        val prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
-        return prefs.edit().putBoolean(KEY_NOTIFY, false).commit()
-    }
+    private fun notifyOff() = prefs.edit().putBoolean(KEY_NOTIFY, false).commit()
 
-    private fun isNotifyOn(): Boolean {
-        val prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
-        return if (prefs.getString(KEY_PARKING_ID, "") == parking?.areaId) prefs.getBoolean(KEY_NOTIFY, false) else false
+    private fun isNotifyOn() = if (prefs.getString(KEY_PARKING_ID, "") == parking?.areaId) prefs.getBoolean(KEY_NOTIFY, false) else false
+
+    private fun saveTime(hour: Int, minute: Int) = prefs.edit().putInt(KEY_TIME_HOUR, hour).putInt(KEY_TIME_MINUTE, minute).commit()
+
+    private fun loadTime(): Pair<Int, Int> {
+        return Pair(prefs.getInt(KEY_TIME_HOUR, -1), prefs.getInt(KEY_TIME_MINUTE, -1))
     }
 
     fun setTitle(title: String) {
