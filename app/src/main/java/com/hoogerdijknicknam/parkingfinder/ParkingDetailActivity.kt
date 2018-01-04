@@ -89,9 +89,7 @@ class ParkingDetailActivity : AppCompatActivity() {
                     cal.set(Calendar.HOUR_OF_DAY, time.first)
                     cal.set(Calendar.MINUTE, time.second)
                     cal.set(Calendar.SECOND, 0)
-                    alarmMgr.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, TAG_ALARM_LEAVE, AlarmManager.OnAlarmListener {
-                        notifyOff(); parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications); pendingIntent.send()
-                    }, null)
+                    alarmMgr.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
                     Log.i("ALARM", "SET")
                     parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications_active)
                     Toast.makeText(this, R.string.toast_notify_on, Toast.LENGTH_LONG).show()
