@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
@@ -12,6 +13,7 @@ import kotlinx.android.synthetic.main.activity_parking_detail.*
 
 const val KEY_PARKING = "PARKING"
 const val KEY_PARKING_ID = "PARKING_ID"
+const val KEY_NOTIFY = "NOTIFY"
 
 class ParkingDetailActivity : AppCompatActivity() {
     private var parking: Parking? = null
@@ -24,12 +26,40 @@ class ParkingDetailActivity : AppCompatActivity() {
 
         val subscribeBtn: Button = findViewById(R.id.parkingDetail_SubscribeBtn)
 
+        if (parkingDetail_btn_notify.tag == null) {
+            parkingDetail_btn_notify.tag = isNotifyOn()
+        }
         if (subscribeBtn.tag == null) {
             subscribeBtn.tag = isLocationSaved()
             if (subscribeBtn.tag as Boolean) {
                 subscribeBtn.setText(R.string.unsubscribe)
+                parkingDetail_btn_notify.visibility = View.VISIBLE
+                if (parkingDetail_btn_notify.tag as Boolean) {
+                    parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications_active)
+                } else {
+                    parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications)
+                }
             } else {
                 subscribeBtn.setText(R.string.Subscribe)
+                parkingDetail_btn_notify.visibility = View.GONE
+            }
+        }
+
+        parkingDetail_btn_notify.setOnClickListener {
+            parkingDetail_btn_notify.tag = !(parkingDetail_btn_notify.tag as Boolean)
+            if (parkingDetail_btn_notify.tag as Boolean) {
+                if (notifyOn()) {
+                    parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications_active)
+                    Toast.makeText(this, R.string.toast_notify_on, Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this, R.string.toast_operation_fail, Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                if (notifyOff()) {
+                    parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications)
+                } else {
+                    Toast.makeText(this, R.string.toast_operation_fail, Toast.LENGTH_SHORT).show()
+                }
             }
         }
 
@@ -38,6 +68,12 @@ class ParkingDetailActivity : AppCompatActivity() {
                 if (saveLocation()) {
                     subscribeBtn.tag = true
                     subscribeBtn.setText(R.string.unsubscribe)
+                    parkingDetail_btn_notify.visibility = View.VISIBLE
+                    if (parkingDetail_btn_notify.tag as Boolean) {
+                        parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications_active)
+                    } else {
+                        parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications)
+                    }
                 } else {
                     Toast.makeText(this, R.string.toast_operation_fail, Toast.LENGTH_SHORT).show()
                 }
@@ -45,6 +81,7 @@ class ParkingDetailActivity : AppCompatActivity() {
                 if (unsaveLocation()) {
                     subscribeBtn.tag = false
                     subscribeBtn.setText(R.string.Subscribe)
+                    parkingDetail_btn_notify.visibility = View.GONE
                 } else {
                     Toast.makeText(this, R.string.toast_operation_fail, Toast.LENGTH_SHORT).show()
                 }
@@ -74,6 +111,21 @@ class ParkingDetailActivity : AppCompatActivity() {
     private fun isLocationSaved(): Boolean {
         val prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
         return prefs.getString(KEY_PARKING_ID, "") == parking?.areaId
+    }
+
+    private fun notifyOn(): Boolean {
+        val prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
+        return prefs.edit().putBoolean(KEY_NOTIFY, true).commit()
+    }
+
+    private fun notifyOff(): Boolean {
+        val prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
+        return prefs.edit().putBoolean(KEY_NOTIFY, false).commit()
+    }
+
+    private fun isNotifyOn(): Boolean {
+        val prefs = getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE)
+        return if (prefs.getString(KEY_PARKING_ID, "") == parking?.areaId) prefs.getBoolean(KEY_NOTIFY, false) else false
     }
 
     fun setTitle(title: String) {

@@ -6,4 +6,5 @@
     <string name="Route">Show Route</string>
     <string name="toast_operation_fail">Operation unsuccessful!</string>
     <string name="unsubscribe">Leave</string>
+    <string name="toast_notify_on">You will be notified when to leave.</string>
 </resources>
