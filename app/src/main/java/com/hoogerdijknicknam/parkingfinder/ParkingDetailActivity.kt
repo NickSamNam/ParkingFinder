@@ -38,11 +38,10 @@ class ParkingDetailActivity : AppCompatActivity() {
         val subscribeBtn: Button = findViewById(R.id.parkingDetail_SubscribeBtn)
         val tpdf = TimePickerDialogFragment()
         tpdf.addTimeSetListener(TimePickerDialog.OnTimeSetListener { view, hourOfDay, minute ->
-            saveTime(hourOfDay, minute)
-
-            if (saveLocation()) {
+            if (saveLocation() && saveTime(hourOfDay, minute)) {
                 subscribeBtn.tag = true
                 subscribeBtn.setText(R.string.unsubscribe)
+                parkingDetail_tv_time.text = "%02d:%02d".format(hourOfDay, minute)
                 parkingDetail_btn_notify.visibility = View.VISIBLE
                 if (parkingDetail_btn_notify.tag as Boolean) {
                     parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications_active)
@@ -108,6 +107,7 @@ class ParkingDetailActivity : AppCompatActivity() {
                 if (unsaveLocation()) {
                     subscribeBtn.tag = false
                     subscribeBtn.setText(R.string.Subscribe)
+                    parkingDetail_tv_time.text = ""
                     parkingDetail_btn_notify.tag = false
                     parkingDetail_btn_notify.visibility = View.GONE
                 } else {
