@@ -1,17 +1,21 @@
 package com.hoogerdijknicknam.parkingfinder
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_parking_detail.*
+import java.util.*
 
 const val KEY_PARKING = "PARKING"
 const val KEY_PARKING_ID = "PARKING_ID"
@@ -72,7 +76,17 @@ class ParkingDetailActivity : AppCompatActivity() {
         parkingDetail_btn_notify.setOnClickListener {
             parkingDetail_btn_notify.tag = !(parkingDetail_btn_notify.tag as Boolean)
             if (parkingDetail_btn_notify.tag as Boolean) {
-                if (notifyOn()) {
+                val time = loadTime()
+                if (time.first >= 0 && time.second >= 0 && notifyOn()) {
+                    val alarmMgr = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                    val intent = Intent(this, ParkingAlarmReceiver::class.java)
+                    val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0)
+                    val cal = Calendar.getInstance()
+                    cal.set(Calendar.HOUR_OF_DAY, time.first)
+                    cal.set(Calendar.MINUTE, time.second)
+                    cal.set(Calendar.SECOND, 0)
+                    alarmMgr.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+                    Log.i("ALARM", "SET")
                     parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications_active)
                     Toast.makeText(this, R.string.toast_notify_on, Toast.LENGTH_LONG).show()
                 } else {
@@ -94,6 +108,7 @@ class ParkingDetailActivity : AppCompatActivity() {
                 if (unsaveLocation()) {
                     subscribeBtn.tag = false
                     subscribeBtn.setText(R.string.Subscribe)
+                    parkingDetail_btn_notify.tag = false
                     parkingDetail_btn_notify.visibility = View.GONE
                 } else {
                     Toast.makeText(this, R.string.toast_operation_fail, Toast.LENGTH_SHORT).show()
