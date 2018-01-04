@@ -12,5 +12,6 @@ class ParkingAlarmReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         Log.i("ALARM", "IM WOKE")
         PushNotifications.notifyUser(context)
+        context.getSharedPreferences(KEY_PARKING, Context.MODE_PRIVATE).edit().remove(KEY_NOTIFY).apply()
     }
 }

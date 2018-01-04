@@ -23,6 +23,7 @@ const val KEY_NOTIFY = "NOTIFY"
 const val KEY_TIME_HOUR = "TIME_HOUR"
 const val KEY_TIME_MINUTE = "TIME_MINUTE"
 const val TAG_TIME_PICKER_DIALOG_FRAGMENT = "TPDF"
+const val TAG_ALARM_LEAVE = "LEAVE_NOW"
 
 class ParkingDetailActivity : AppCompatActivity() {
     private var parking: Parking? = null
@@ -60,6 +61,10 @@ class ParkingDetailActivity : AppCompatActivity() {
             subscribeBtn.tag = isLocationSaved()
             if (subscribeBtn.tag as Boolean) {
                 subscribeBtn.setText(R.string.unsubscribe)
+                val time = loadTime()
+                if (time.first >= 0 && time.second >= 0) {
+                    parkingDetail_tv_time.text = "%02d:%02d".format(time.first, time.second)
+                }
                 parkingDetail_btn_notify.visibility = View.VISIBLE
                 if (parkingDetail_btn_notify.tag as Boolean) {
                     parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications_active)
@@ -74,17 +79,19 @@ class ParkingDetailActivity : AppCompatActivity() {
 
         parkingDetail_btn_notify.setOnClickListener {
             parkingDetail_btn_notify.tag = !(parkingDetail_btn_notify.tag as Boolean)
+            val alarmMgr = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(this, ParkingAlarmReceiver::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0)
             if (parkingDetail_btn_notify.tag as Boolean) {
                 val time = loadTime()
                 if (time.first >= 0 && time.second >= 0 && notifyOn()) {
-                    val alarmMgr = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                    val intent = Intent(this, ParkingAlarmReceiver::class.java)
-                    val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0)
                     val cal = Calendar.getInstance()
                     cal.set(Calendar.HOUR_OF_DAY, time.first)
                     cal.set(Calendar.MINUTE, time.second)
                     cal.set(Calendar.SECOND, 0)
-                    alarmMgr.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pendingIntent)
+                    alarmMgr.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, TAG_ALARM_LEAVE, AlarmManager.OnAlarmListener {
+                        notifyOff(); parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications); pendingIntent.send()
+                    }, null)
                     Log.i("ALARM", "SET")
                     parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications_active)
                     Toast.makeText(this, R.string.toast_notify_on, Toast.LENGTH_LONG).show()
@@ -94,6 +101,7 @@ class ParkingDetailActivity : AppCompatActivity() {
             } else {
                 if (notifyOff()) {
                     parkingDetail_btn_notify.setImageResource(R.drawable.ic_notifications)
+                    alarmMgr.cancel(pendingIntent)
                 } else {
                     Toast.makeText(this, R.string.toast_operation_fail, Toast.LENGTH_SHORT).show()
                 }
@@ -110,6 +118,10 @@ class ParkingDetailActivity : AppCompatActivity() {
                     parkingDetail_tv_time.text = ""
                     parkingDetail_btn_notify.tag = false
                     parkingDetail_btn_notify.visibility = View.GONE
+                    val alarmMgr = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                    val intent = Intent(this, ParkingAlarmReceiver::class.java)
+                    val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0)
+                    alarmMgr.cancel(pendingIntent)
                 } else {
                     Toast.makeText(this, R.string.toast_operation_fail, Toast.LENGTH_SHORT).show()
                 }
@@ -140,9 +152,7 @@ class ParkingDetailActivity : AppCompatActivity() {
 
     private fun saveTime(hour: Int, minute: Int) = prefs.edit().putInt(KEY_TIME_HOUR, hour).putInt(KEY_TIME_MINUTE, minute).commit()
 
-    private fun loadTime(): Pair<Int, Int> {
-        return Pair(prefs.getInt(KEY_TIME_HOUR, -1), prefs.getInt(KEY_TIME_MINUTE, -1))
-    }
+    private fun loadTime() = Pair(prefs.getInt(KEY_TIME_HOUR, -1), prefs.getInt(KEY_TIME_MINUTE, -1))
 
     fun setTitle(title: String) {
         val titleTV: TextView = findViewById(R.id.parkingDetail_titleTV)
