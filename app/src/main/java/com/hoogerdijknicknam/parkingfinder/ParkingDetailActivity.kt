@@ -127,6 +127,8 @@ class ParkingDetailActivity : AppCompatActivity() {
         }
 
         parkingDetail_titleTV.text = parking?.areaDesc
+        // todo use real open hours
+        parkingDetail_openingTimeTV.text = parking?.openHoursTemp
 
         val directionsBtn: Button = findViewById(R.id.parkingDetail_routeBtn)
         directionsBtn.setOnClickListener {

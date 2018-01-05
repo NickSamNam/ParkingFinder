@@ -6,13 +6,14 @@ import com.android.volley.RequestQueue
  * Created by snick on 16-12-2017.
  */
 object RDWOpenDataSubscriptionService {
+    lateinit var retriever: RDWOpenDataRetriever
     private var started = false
     private val subscribers = ArrayList<Subscription>()
     val backLog = ArrayList<Parking>()
 
     fun start(requestQueue: RequestQueue) {
         if (started) return
-        val retriever = RDWOpenDataRetriever(requestQueue)
+        retriever = RDWOpenDataRetriever(requestQueue)
         retriever.requestParking(object : RDWOpenDataRetriever.ParkingRequestListener {
             override fun onReceived(parking: Parking) {
                 backLog += parking

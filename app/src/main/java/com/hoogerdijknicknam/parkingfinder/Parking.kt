@@ -3,48 +3,39 @@ package com.hoogerdijknicknam.parkingfinder
 import android.os.Parcel
 import android.os.ParcelFormatException
 import android.os.Parcelable
-import java.util.*
+import java.time.DayOfWeek
 
 /**
  * Created by Ricky on 13/12/2017.
  */
 
-data class Parking(val areaId: String, val areaDesc: String, val location: LatLng, val price: Float?, val startTime: Date?, val endTime: Date?, val area: List<LatLng>?) : Parcelable {
+data class Parking(val areaId: String, val areaDesc: String, val location: LatLng, val area: List<LatLng>?) : Parcelable {
+    // todo remove open hours temp with line below
+    var openHoursTemp = "6-23"
+    var openHours: Map<DayOfWeek, String?>? = null
+
     constructor(parcel: Parcel) : this(
             parcel.readString(),
             parcel.readString(),
             parcel.readParcelable<LatLng>(LatLng::class.java.classLoader),
             try {
-                parcel.readFloat()
-            } catch (e: ParcelFormatException) {
-                null
-            },
-            try {
-                Date(parcel.readLong())
-            } catch (e: ParcelFormatException) {
-                null
-            },
-            try {
-                Date(parcel.readLong())
-            } catch (e: ParcelFormatException) {
-                null
-            },
-            try {
                 parcel.createTypedArrayList(LatLng.CREATOR)
             } catch (e: ParcelFormatException) {
                 null
-            })
+            }) {
+        try {
+            parcel.readMap(openHours, DayOfWeek::class.java.classLoader)
+        } catch (e: ParcelFormatException) {
+
+        }
+    }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(areaId)
         parcel.writeString(areaDesc)
         parcel.writeParcelable(location, 0)
-        if (price != null) parcel.writeFloat(price)
-        if (startTime != null && endTime != null) {
-            parcel.writeLong(startTime.time)
-            parcel.writeLong(endTime.time)
-        }
         if (area != null) parcel.writeTypedList(area)
+        if (openHours != null) parcel.writeMap(openHours)
     }
 
     override fun describeContents() = 0

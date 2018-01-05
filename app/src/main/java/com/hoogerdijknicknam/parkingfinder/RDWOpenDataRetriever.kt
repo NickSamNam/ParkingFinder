@@ -29,6 +29,16 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
         }, Response.ErrorListener { return@ErrorListener })
     }
 
+    fun addOpenHours(parking: Parking, parkingRequestListener: ParkingRequestListener) {
+        // todo implement
+        parkingRequestListener.onReceived(parking)
+    }
+
+    fun addCosts(parking: Parking, parkingRequestListener: ParkingRequestListener) {
+        // todo implement
+        parkingRequestListener.onReceived(parking)
+    }
+
     /**
      * Retrieve GEBIED
      */
@@ -100,7 +110,7 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
     }
 
     private fun stage4(areaid: String, areadesc: String, location: LatLng, area: List<LatLng>?, parkingRequestListener: ParkingRequestListener) {
-        parkingRequestListener.onReceived(Parking(areaid, areadesc, location, null, null, null, area))
+        parkingRequestListener.onReceived(Parking(areaid, areadesc, location, area))
     }
 
     private fun geoResultToLatLng(response: JSONArray): LatLng {

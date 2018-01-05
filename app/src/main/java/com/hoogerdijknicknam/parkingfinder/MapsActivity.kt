@@ -113,6 +113,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap.setOnInfoWindowClickListener(::onInfoWindowClick)
+        mMap.setOnMarkerClickListener(::onMarkerClick)
         mMap.setOnCameraIdleListener { RDWOpenDataSubscriptionService.backLog.forEach { it -> addMarker(it) } }
         RDWOpenDataSubscriptionService.backLog.forEach { addMarker(it) }
 
@@ -280,8 +281,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
                         .title(parking.areaDesc)
                         .position(LatLng(parking.location.latitude, parking.location.longitude))
                 if (parking.areaId == savedParkingId) options.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
-                if (parking.startTime != null && parking.endTime != null)
-                    options.snippet("${DateFormat.getTimeFormat(this).format(parking.startTime)} - ${DateFormat.getTimeFormat(this).format(parking.endTime)}")
                 val marker = mMap.addMarker(options)
                 marker.tag = parking.areaId
                 visibleMarkers.put(parking.areaId, marker)
@@ -296,6 +295,25 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
         val intent = Intent(this, ParkingDetailActivity::class.java)
         intent.putExtra(KEY_PARKING_ID, id)
         startActivityForResult(intent, REQUEST_PARKING_SAVING)
+    }
+
+    private fun onMarkerClick(marker: Marker): Boolean {
+        val parking = RDWOpenDataSubscriptionService.backLog.find { it.areaId == marker.tag } ?: return false
+        if (parking.area != null && parking.area.size > 1) {
+            val po = PolygonOptions()
+            po.strokeColor(Color.RED)
+            po.fillColor(resources.getColor(R.color.colorArea))
+            parking.area.forEach { po.add(LatLng(it.latitude, it.longitude)) }
+            val p = mMap.addPolygon(po)
+            mMap.setOnInfoWindowCloseListener { p.remove() }
+        }
+        RDWOpenDataSubscriptionService.retriever.addOpenHours(parking, object: RDWOpenDataRetriever.ParkingRequestListener {
+            override fun onReceived(parking: Parking) {
+                // todo use real open hours
+                marker.snippet = parking.openHoursTemp
+            }
+        })
+        return false
     }
 
     private fun updateLocationUI() {
