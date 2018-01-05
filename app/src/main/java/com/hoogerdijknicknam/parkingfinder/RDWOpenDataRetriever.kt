@@ -7,6 +7,7 @@ import com.android.volley.toolbox.JsonArrayRequest
 import com.hoogerdijknicknam.parkingfinder.Support.DayOfWeek
 import org.json.JSONArray
 import org.json.JSONException
+import java.text.ParseException
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -34,7 +35,7 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
     }
 
     fun addOpenHours(parking: Parking, parkingRequestListener: ParkingRequestListener) {
-        retrieveOpenHours(parking.areaId, object: OpenHoursRetrievalListener {
+        retrieveOpenHours(parking.areaId, object : OpenHoursRetrievalListener {
             override fun onSuccessful(openHours: Map<DayOfWeek, Pair<Date, Date>>) {
                 parking.openHours = openHours
                 parkingRequestListener.onReceived(parking)
@@ -183,12 +184,59 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
     }
 
     private fun retrieveOpenHours(areaid: String, openHoursRetrievalListener: OpenHoursRetrievalListener) {
-        retrieveTableToegang("?\$query=SELECT Days, EnterFrom, EnterUntil WHERE areaid=\"$areaid\"", Response.Listener { response ->
-            // todo replace with actual response
+        retrieveTableToegang("?\$query=SELECT days, enterfrom, enteruntil WHERE areaid=\"$areaid\"", Response.Listener { response ->
             val opens: MutableMap<DayOfWeek, Pair<Date, Date>> = HashMap()
-            DayOfWeek.values().forEach { opens.put(it, Pair(Calendar.getInstance().time, Calendar.getInstance().also { it.add(Calendar.HOUR_OF_DAY, 4) }.time)) }
-            openHoursRetrievalListener.onSuccessful(opens)
+
+            days@ for (i in 0 until response.length()) {
+                try {
+                    val o = response.getJSONObject(i)
+                    val oDay = o.getString("days")
+                    val oEnterFrom = o.getString("enterfrom")
+                    val oEnterUntil = o.getString("enteruntil")
+                    val day = when (oDay) {
+                        "MAANDAG" -> DayOfWeek.MONDAY
+                        "DINSDAG" -> DayOfWeek.TUESDAY
+                        "WOENSDAG" -> DayOfWeek.WEDNESDAY
+                        "DONDERDAG" -> DayOfWeek.THURSDAY
+                        "VRIJDAG" -> DayOfWeek.FRIDAY
+                        "ZATERDAG" -> DayOfWeek.SATURDAY
+                        "ZONDAG" -> DayOfWeek.SUNDAY
+                        else -> continue@days
+                    }
+                    val enterFrom = oEnterFrom.parseTime()
+                    val enterUntil = oEnterUntil.parseTime()
+                    opens.put(day, Pair(enterFrom, enterUntil))
+                } catch (e: JSONException) {
+                    continue@days
+                } catch (e: ParseException) {
+                    continue@days
+                }
+            }
+
+            if (opens.isNotEmpty()) {
+                openHoursRetrievalListener.onSuccessful(opens)
+            } else {
+                openHoursRetrievalListener.onFailed()
+            }
         }, Response.ErrorListener { openHoursRetrievalListener.onFailed() })
+    }
+
+    private fun String.parseTime(): Date {
+        var s = this
+        try {
+            s.toInt()
+        } catch (e: NumberFormatException) {
+            throw ParseException("String contains non numbers", 0)
+        }
+        if (s.length < 4) {
+            s = s.padStart(4, '0')
+        }
+        val hh = s.substring(0, 2).toInt()
+        val mm = s.substring(2, 4).toInt()
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, hh)
+        cal.set(Calendar.MINUTE, mm)
+        return cal.time
     }
 
     private fun stringsToLatLng(strings: List<String>): LatLng {
