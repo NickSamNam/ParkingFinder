@@ -21,6 +21,7 @@ private const val API_RESOURCE_GEOMETRIE_GEBIED = "e6d2-rh45.json"
 private const val API_RESOURCE_GEO_PARKEER_GARAGES = "7m7r-i29f.json"
 private const val API_RESOURCE_GEO_PENR = "mtdk-3sae.json"
 private const val API_RESOURCE_GEO_CARPOOL = "d85t-gfew.json"
+private const val API_RESOURCE_TOEGANG = "3fak-cvu3.json"
 private const val USAGE_ID_GARAGE = "GARAGEP"
 private const val USAGE_ID_P_EN_R = "PARKRIDE"
 private const val USAGE_ID_CARPOOL = "CARPOOL"
@@ -33,11 +34,15 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
     }
 
     fun addOpenHours(parking: Parking, parkingRequestListener: ParkingRequestListener) {
-        // todo implement
-        val opens: MutableMap<DayOfWeek, Pair<Date, Date>> = HashMap()
-        DayOfWeek.values().forEach { opens.put(it, Pair(Calendar.getInstance().time, Calendar.getInstance().also { it.add(Calendar.HOUR_OF_DAY, 4) }.time)) }
-        parking.openHours = opens
-        parkingRequestListener.onReceived(parking)
+        retrieveOpenHours(parking.areaId, object: OpenHoursRetrievalListener {
+            override fun onSuccessful(openHours: Map<DayOfWeek, Pair<Date, Date>>) {
+                parking.openHours = openHours
+                parkingRequestListener.onReceived(parking)
+            }
+
+            override fun onFailed() {
+            }
+        })
     }
 
     /**
@@ -177,10 +182,21 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
         }, Response.ErrorListener { areaRetrievalListener.onFailed() })
     }
 
+    private fun retrieveOpenHours(areaid: String, openHoursRetrievalListener: OpenHoursRetrievalListener) {
+        retrieveTableToegang("?\$query=SELECT Days, EnterFrom, EnterUntil WHERE areaid=\"$areaid\"", Response.Listener { response ->
+            // todo replace with actual response
+            val opens: MutableMap<DayOfWeek, Pair<Date, Date>> = HashMap()
+            DayOfWeek.values().forEach { opens.put(it, Pair(Calendar.getInstance().time, Calendar.getInstance().also { it.add(Calendar.HOUR_OF_DAY, 4) }.time)) }
+            openHoursRetrievalListener.onSuccessful(opens)
+        }, Response.ErrorListener { openHoursRetrievalListener.onFailed() })
+    }
+
     private fun stringsToLatLng(strings: List<String>): LatLng {
         val doubles = strings.map { it.toDouble() }
         return LatLng(doubles.max()!!, doubles.min()!!)
     }
+
+    private fun retrieveTableToegang(query: String = "", responseListener: Response.Listener<JSONArray>, errorListener: Response.ErrorListener) = retrieveTable(API_RESOURCE_TOEGANG + query, responseListener, errorListener)
 
     private fun retrieveTableGebied(query: String = "", responseListener: Response.Listener<JSONArray>, errorListener: Response.ErrorListener) {
         retrieveTable(API_RESOURCE_GEBIED + query, responseListener, errorListener)
@@ -213,6 +229,11 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
 
     private interface AreaRetrievalListener {
         fun onSuccessful(area: List<LatLng>)
+        fun onFailed()
+    }
+
+    private interface OpenHoursRetrievalListener {
+        fun onSuccessful(openHours: Map<DayOfWeek, Pair<Date, Date>>)
         fun onFailed()
     }
 }

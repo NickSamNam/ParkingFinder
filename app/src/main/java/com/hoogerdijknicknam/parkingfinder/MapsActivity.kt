@@ -308,11 +308,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
             val p = mMap.addPolygon(po)
             mMap.setOnInfoWindowCloseListener { p.remove() }
         }
-        RDWOpenDataSubscriptionService.retriever.addOpenHours(parking, object: RDWOpenDataRetriever.ParkingRequestListener {
+        RDWOpenDataSubscriptionService.retriever.addOpenHours(parking, object : RDWOpenDataRetriever.ParkingRequestListener {
             override fun onReceived(parking: Parking) {
                 val today = parking.openHours?.get(DayOfWeek.of(Calendar.getInstance()[Calendar.DAY_OF_WEEK])) ?: return
                 val format = DateFormat.getTimeFormat(this@MapsActivity)
                 marker.snippet = format.format(today.first) + " - " + format.format(today.second)
+                if (marker.isInfoWindowShown) {
+                    marker.hideInfoWindow()
+                    marker.showInfoWindow()
+                }
             }
         })
         return false
