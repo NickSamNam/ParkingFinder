@@ -8,12 +8,14 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.text.format.DateFormat
 import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import com.hoogerdijknicknam.parkingfinder.Support.DayOfWeek
 import kotlinx.android.synthetic.main.activity_parking_detail.*
 import java.util.*
 
@@ -127,8 +129,25 @@ class ParkingDetailActivity : AppCompatActivity() {
         }
 
         parkingDetail_titleTV.text = parking?.areaDesc
-        // todo use real open hours
-        parkingDetail_openingTimeTV.text = parking?.openHoursTemp
+
+        val openHours = parking?.openHours
+        if (openHours != null) {
+            val format = DateFormat.getTimeFormat(this)
+            var openString = ""
+            days@ for (day in DayOfWeek.values()) {
+                val today = openHours[day] ?: continue
+                openString += getString(when (day) {
+                    DayOfWeek.MONDAY -> R.string.monday
+                    DayOfWeek.TUESDAY -> R.string.tuesday
+                    DayOfWeek.WEDNESDAY -> R.string.wednesday
+                    DayOfWeek.THURSDAY -> R.string.thursday
+                    DayOfWeek.FRIDAY -> R.string.friday
+                    DayOfWeek.SATURDAY -> R.string.saturday
+                    DayOfWeek.SUNDAY -> R.string.sunday
+                }) + ": " + format.format(today.first) + " - " + format.format(today.second) + "\n"
+            }
+            parkingDetail_openingTimeTV.text = openString.trim()
+        }
 
         val directionsBtn: Button = findViewById(R.id.parkingDetail_routeBtn)
         directionsBtn.setOnClickListener {

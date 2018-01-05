@@ -4,8 +4,11 @@ import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.JsonArrayRequest
+import com.hoogerdijknicknam.parkingfinder.Support.DayOfWeek
 import org.json.JSONArray
 import org.json.JSONException
+import java.util.*
+import kotlin.collections.HashMap
 
 /**
  * Created by snick on 15-12-2017.
@@ -31,11 +34,9 @@ class RDWOpenDataRetriever(private val requestQueue: RequestQueue) {
 
     fun addOpenHours(parking: Parking, parkingRequestListener: ParkingRequestListener) {
         // todo implement
-        parkingRequestListener.onReceived(parking)
-    }
-
-    fun addCosts(parking: Parking, parkingRequestListener: ParkingRequestListener) {
-        // todo implement
+        val opens: MutableMap<DayOfWeek, Pair<Date, Date>> = HashMap()
+        DayOfWeek.values().forEach { opens.put(it, Pair(Calendar.getInstance().time, Calendar.getInstance().also { it.add(Calendar.HOUR_OF_DAY, 4) }.time)) }
+        parking.openHours = opens
         parkingRequestListener.onReceived(parking)
     }
 

@@ -21,6 +21,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.android.gms.maps.model.LatLng
+import com.hoogerdijknicknam.parkingfinder.Support.DayOfWeek
 import org.json.JSONObject
 import java.util.*
 
@@ -309,8 +310,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, RDWOpenDataSubscri
         }
         RDWOpenDataSubscriptionService.retriever.addOpenHours(parking, object: RDWOpenDataRetriever.ParkingRequestListener {
             override fun onReceived(parking: Parking) {
-                // todo use real open hours
-                marker.snippet = parking.openHoursTemp
+                val today = parking.openHours?.get(DayOfWeek.of(Calendar.getInstance()[Calendar.DAY_OF_WEEK])) ?: return
+                val format = DateFormat.getTimeFormat(this@MapsActivity)
+                marker.snippet = format.format(today.first) + " - " + format.format(today.second)
             }
         })
         return false

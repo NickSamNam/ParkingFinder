@@ -3,16 +3,15 @@ package com.hoogerdijknicknam.parkingfinder
 import android.os.Parcel
 import android.os.ParcelFormatException
 import android.os.Parcelable
-import java.time.DayOfWeek
+import com.hoogerdijknicknam.parkingfinder.Support.DayOfWeek
+import java.util.*
 
 /**
  * Created by Ricky on 13/12/2017.
  */
 
 data class Parking(val areaId: String, val areaDesc: String, val location: LatLng, val area: List<LatLng>?) : Parcelable {
-    // todo remove open hours temp with line below
-    var openHoursTemp = "6-23"
-    var openHours: Map<DayOfWeek, String?>? = null
+    var openHours: Map<DayOfWeek, Pair<Date, Date>>? = null
 
     constructor(parcel: Parcel) : this(
             parcel.readString(),
@@ -24,7 +23,7 @@ data class Parking(val areaId: String, val areaDesc: String, val location: LatLn
                 null
             }) {
         try {
-            parcel.readMap(openHours, DayOfWeek::class.java.classLoader)
+            parcel.readMap(openHours, Date::class.java.classLoader)
         } catch (e: ParcelFormatException) {
 
         }
